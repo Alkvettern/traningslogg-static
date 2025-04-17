@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="sv">
 <head>
@@ -5,63 +6,125 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Träningslogg</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 2rem; background: #f3f4f6; }
-    h1 { color: #111827; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { padding: 0.5rem; border: 1px solid #d1d5db; text-align: left; }
-    input, select { padding: 0.5rem; margin-right: 0.5rem; }
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      background-color: #f3f4f6;
+    }
+    label, select, input, button {
+      display: block;
+      margin: 10px 0;
+    }
+    .logg-entry {
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .entry-controls button {
+      margin-left: 5px;
+    }
   </style>
 </head>
 <body>
-  <h1>📝 Träningslogg</h1>
-  <form id="logForm">
-    <label>Datum: <input type="date" id="date" required /></label>
-    <label>Övning:
-      <select id="exercise">
-        <option value="Bänkpress">Bänkpress</option>
-        <option value="Knäböj">Knäböj</option>
-        <option value="Marklyft">Marklyft</option>
-        <option value="Militärpress">Militärpress</option>
-        <option value="Egen">Egen övning</option>
-      </select>
-    </label>
-    <input type="text" id="customExercise" placeholder="Skriv egen övning" style="display:none;" />
-    <label>Reps: <input type="number" id="reps" required /></label>
-    <label>Vikt (kg): <input type="number" id="weight" required /></label>
-    <button type="submit">Lägg till</button>
-  </form>
-  <table id="logTable">
-    <thead>
-      <tr><th>Datum</th><th>Övning</th><th>Reps</th><th>Vikt (kg)</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <h1>Träningslogg</h1>
+
+  <label for="exercise">Välj övning:</label>
+  <select id="exercise"></select>
+  <input type="text" id="newExercise" placeholder="Lägg till ny övning" />
+  <button onclick="addExercise()">Lägg till övning</button>
+
+  <label for="weight">Vikt (kg):</label>
+  <input type="number" id="weight" />
+
+  <label for="reps">Reps:</label>
+  <input type="number" id="reps" />
+
+  <label for="date">Datum:</label>
+  <input type="date" id="date" />
+
+  <button onclick="addLogg()">Lägg till</button>
+
+  <h2>Träningspass</h2>
+  <div id="logg"></div>
+
   <script>
-    const form = document.getElementById('logForm');
-    const tableBody = document.querySelector('#logTable tbody');
-    const exerciseSelect = document.getElementById('exercise');
-    const customInput = document.getElementById('customExercise');
+    const standardExercises = ["Knäböj", "Marklyft", "Bänkpress", "Militärpress"];
+    const exerciseSelect = document.getElementById("exercise");
+    const loggContainer = document.getElementById("logg");
 
-    exerciseSelect.addEventListener('change', () => {
-      customInput.style.display = exerciseSelect.value === 'Egen' ? 'inline' : 'none';
-    });
+    let exercises = JSON.parse(localStorage.getItem("exercises")) || standardExercises;
+    let logg = JSON.parse(localStorage.getItem("logg")) || [];
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const date = document.getElementById('date').value;
-      let exercise = exerciseSelect.value;
-      if (exercise === 'Egen') {
-        exercise = customInput.value || 'Egen övning';
+    function saveExercises() {
+      localStorage.setItem("exercises", JSON.stringify(exercises));
+    }
+
+    function saveLogg() {
+      localStorage.setItem("logg", JSON.stringify(logg));
+    }
+
+    function updateExerciseDropdown() {
+      exerciseSelect.innerHTML = "";
+      exercises.forEach(ex => {
+        const opt = document.createElement("option");
+        opt.textContent = ex;
+        exerciseSelect.appendChild(opt);
+      });
+    }
+
+    function addExercise() {
+      const newEx = document.getElementById("newExercise").value.trim();
+      if (newEx && !exercises.includes(newEx)) {
+        exercises.push(newEx);
+        saveExercises();
+        updateExerciseDropdown();
+        document.getElementById("newExercise").value = "";
       }
-      const reps = document.getElementById('reps').value;
-      const weight = document.getElementById('weight').value;
+    }
 
-      const row = `<tr><td>${date}</td><td>${exercise}</td><td>${reps}</td><td>${weight}</td></tr>`;
-      tableBody.innerHTML += row;
+    function addLogg() {
+      const entry = {
+        exercise: exerciseSelect.value,
+        weight: document.getElementById("weight").value,
+        reps: document.getElementById("reps").value,
+        date: document.getElementById("date").value
+      };
+      logg.push(entry);
+      saveLogg();
+      renderLogg();
+    }
 
-      form.reset();
-      customInput.style.display = 'none';
-    });
+    function deleteEntry(index) {
+      logg.splice(index, 1);
+      saveLogg();
+      renderLogg();
+    }
+
+    function renderLogg() {
+      loggContainer.innerHTML = "";
+      logg.forEach((entry, index) => {
+        const div = document.createElement("div");
+        div.className = "logg-entry";
+        div.innerHTML = `
+          <div>
+            <strong>${entry.exercise}</strong><br />
+            ${entry.weight} kg x ${entry.reps} reps<br />
+            ${entry.date}
+          </div>
+          <div class="entry-controls">
+            <button onclick="deleteEntry(${index})">🗑️</button>
+          </div>
+        `;
+        loggContainer.appendChild(div);
+      });
+    }
+
+    updateExerciseDropdown();
+    renderLogg();
   </script>
 </body>
 </html>
